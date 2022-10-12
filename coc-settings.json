@@ -1,0 +1,16 @@
+{
+	"diagnostic.displayByAle": true,
+	"coc.preferences.jumpCommand": "tab drop",
+	"languageserver": {
+		"csharp-ls": {
+			"command": "csharp-ls",
+			"filetypes": ["cs"],
+			"rootPatterns": ["*.csproj", ".vim/", ".git/", ".hg/"]
+		},
+		"coc-clangd": {
+			"command": "clangd",
+			"rootPatterns": ["compile_flags.txt", "compile_commands.json"],
+			"filetypes": ["c", "cc", "cpp", "c++", "objc", "objcpp"]
+		}
+	}
+}
