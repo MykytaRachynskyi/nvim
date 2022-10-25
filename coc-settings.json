@@ -3,7 +3,7 @@
 	"coc.preferences.jumpCommand": "tab drop",
 	"languageserver": {
 		"csharp-ls": {
-			"command": "csharp-ls",
+			"command": "omnisharp", //"csharp-ls",
 			"filetypes": ["cs"],
 			"rootPatterns": ["*.csproj", ".vim/", ".git/", ".hg/"]
 		},
@@ -12,5 +12,9 @@
 			"rootPatterns": ["compile_flags.txt", "compile_commands.json"],
 			"filetypes": ["c", "cc", "cpp", "c++", "objc", "objcpp"]
 		}
-	}
+	},
+	"zig.enabled": true,
+	"zig.startUpMessage": true,
+	"zig.path": "zls",
+	"zig.debugLog": false
 }
