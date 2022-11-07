@@ -1,0 +1,197 @@
+
+
+"LSP stuff
+if !has('nvim')
+    function! s:on_lsp_buffer_enabled() abort
+        setlocal omnifunc=lsp#complete
+        setlocal signcolumn=yes
+        if exists('+tagfunc') | setlocal tagfunc=lsp#tagfunc | endif
+        nmap <buffer> gd <plug>(lsp-definition)
+        nmap <buffer> gs <plug>(lsp-document-symbol-search)
+        nmap <buffer> gS <plug>(lsp-workspace-symbol-search)
+        nmap <buffer> gr <plug>(lsp-references)
+        nmap <buffer> gi <plug>(lsp-implementation)
+        nmap <buffer> gt <plug>(lsp-type-definition)
+        nmap <buffer> <leader>rn <plug>(lsp-rename)
+        nmap <buffer> [g <plug>(lsp-previous-diagnostic)
+        nmap <buffer> ]g <plug>(lsp-next-diagnostic)
+        nmap <buffer> K <plug>(lsp-hover)
+        inoremap <buffer> <expr><c-f> lsp#scroll(+4)
+        inoremap <buffer> <expr><c-d> lsp#scroll(-4)
+
+        let g:lsp_format_sync_timeout = 1000
+        autocmd! BufWritePre *.rs,*.go.,*.zig call execute('LspDocumentFormatSync')
+        " refer to doc to add more commands
+    endfunction
+
+    " Setting up language servers
+    if executable('zls')
+        au User lsp_setup call lsp#register_server({
+            \ 'name': 'zls',
+            \ 'cmd': {server_info->['zls']},
+            \ 'allowlist': ['zig'],
+            \ })
+    endif
+    inoremap <expr> <cr> pumvisible() ? "\<C-y>\<cr>" : "\<cr>"
+    autocmd! CompleteDone * if pumvisible() == 0 | pclose | endif
+    augroup lsp_install
+        au!
+        " call s:on_lsp_buffer_enabled only for languages that has the server registered.
+        autocmd User lsp_buffer_enabled call s:on_lsp_buffer_enabled()
+    augroup END
+else
+    lua << EOF
+        local lspconfig = require "lspconfig"
+        local on_attach = function(_, bufnr)
+          vim.api.nvim_buf_set_option(bufnr, "omnifunc", "v:lua.vim.lsp.omnifunc")
+          local opts = { noremap = true, silent = true }
+          vim.api.nvim_buf_set_keymap(bufnr, "n", "gd", "<cmd>lua vim.lsp.buf.definition()<CR>", { silent = true, noremap = true })
+          vim.api.nvim_buf_set_keymap(bufnr, "n", "gi", "<cmd>lua vim.lsp.buf.implementation()<CR>", { silent = true, noremap = true })
+          vim.api.nvim_buf_set_keymap(bufnr, "n", "gr", "<cmd>lua vim.lsp.buf.references()<CR>", { silent = true, noremap = true })
+          vim.api.nvim_buf_set_keymap(bufnr, "n", "R", "<cmd>lua vim.lsp.buf.rename()<CR>", opts)
+          vim.api.nvim_buf_set_keymap(bufnr, "n", "K", "<cmd>lua vim.lsp.buf.hover()<CR>", opts)
+          vim.api.nvim_buf_set_keymap(bufnr, "i", "<c-s>", "<cmd>lua vim.lsp.buf.signature_help()<CR>", opts)
+          vim.api.nvim_buf_set_keymap(bufnr, "n", "<c-s>", "<cmd>lua vim.lsp.buf.signature_help()<CR>", opts)
+          vim.api.nvim_buf_set_keymap(bufnr, "n", "<c-d>", "<cmd>lua vim.lsp.diagnostic.show_line_diagnostics()<CR>", opts)
+          vim.api.nvim_buf_set_keymap(bufnr, "n", "[d", "<cmd>lua vim.diagnostic.goto_prev()<CR>", opts)
+          vim.api.nvim_buf_set_keymap(bufnr, "n", "]d", "<cmd>lua vim.diagnostic.goto_next()<CR>", opts)
+          vim.api.nvim_buf_set_keymap(bufnr, "n", "<leader>ca", "<cmd>Telescope lsp_code_actions<CR>", opts)
+
+          vim.cmd [[ command! Format execute '<cmd>lua vim.lsp.buf.formatting()' ]]
+        end
+
+        local capabilities = vim.lsp.protocol.make_client_capabilities()
+        capabilities = require("cmp_nvim_lsp").default_capabilities(capabilities)
+
+        local servers = { "omnisharp", "clangd", "rust_analyzer", "gopls", "intelephense", "jedi_language_server", "hls", "purescriptls", "zls" }
+
+        for _, lsp in ipairs(servers) do
+          lspconfig[lsp].setup {
+            on_attach = on_attach,
+            capabilities = capabilities,
+          }
+        end
+        vim.cmd [[ command! Fmt :lua vim.lsp.buf.formatting_sync() ]]
+        vim.cmd [[ nnoremap <leader>F :Fmt<CR> ]]
+
+        local sumneko_root = string.format("%s/.local/lua-language-server", os.getenv("HOME"))
+        local sumneko_binary = sumneko_root .. "/bin/lua-language-server"
+
+        local runtime_path = vim.split(package.path, ";")
+        table.insert(runtime_path, "lua/?.lua")
+        table.insert(runtime_path, "lua/?/init.lua")
+
+        require("lspconfig").sumneko_lua.setup {
+          cmd = { sumneko_binary, "-E", sumneko_root .. "/main.lua" },
+          on_attach = on_attach,
+          settings = {
+            Lua = {
+              diagnostics = {
+                globals = { "vim" },
+              },
+              workspace = {
+                -- Make the server aware of Neovim runtime files
+                library = vim.api.nvim_get_runtime_file("", true),
+              },
+              -- Do not send telemetry data containing a randomized but unique identifier
+              telemetry = {
+                enable = false,
+              },
+            },
+          },
+        }
+
+      require"lspconfig".elixirls.setup {
+        cmd = { os.getenv("HOME") .. "/.local/elixir-ls/language_server.sh" }
+
+        }
+      require'lspconfig'.omnisharp.setup {
+        cmd = { "dotnet", "C:\\Users\\Nikita\\AppData\\Local\\omnisharp-vim\\omnisharp-roslyn\\OmniSharp.Roslyn.dll" },
+
+        -- Enables support for reading code style, naming convention and analyzer
+        -- settings from .editorconfig.
+        enable_editorconfig_support = true,
+
+        -- If true, MSBuild project system will only load projects for files that
+        -- were opened in the editor. This setting is useful for big C# codebases
+        -- and allows for faster initialization of code navigation features only
+        -- for projects that are relevant to code that is being edited. With this
+        -- setting enabled OmniSharp may load fewer projects and may thus display
+        -- incomplete reference lists for symbols.
+        enable_ms_build_load_projects_on_demand = false,
+
+        -- Enables support for roslyn analyzers, code fixes and rulesets.
+        enable_roslyn_analyzers = false,
+
+        -- Specifies whether 'using' directives should be grouped and sorted during
+        -- document formatting.
+        organize_imports_on_format = false,
+
+        -- Enables support for showing unimported types and unimported extension
+        -- methods in completion lists. When committed, the appropriate using
+        -- directive will be added at the top of the current file. This option can
+        -- have a negative impact on initial completion responsiveness,
+        -- particularly for the first few completion sessions after opening a
+        -- solution.
+        enable_import_completion = false,
+
+        -- Specifies whether to include preview versions of the .NET SDK when
+        -- determining which version to use for project loading.
+        sdk_include_prereleases = true,
+
+        -- Only run analyzers against open files when 'enableRoslynAnalyzers' is
+        -- true
+        analyze_open_documents_only = false,
+        }
+        vim.opt.completeopt = { "menuone", "noselect" }
+
+        -- Don't show the dumb matching stuff.
+        vim.opt.shortmess:append "c"
+
+
+        local cmp = require "cmp"
+        cmp.setup {
+          snippet = {
+              expand = function(args)
+                vim.fn["vsnip#anonymous"](args.body) -- For `vsnip` users.
+              end,
+            },
+          -- You can set mapping if you want.
+          mapping = {
+            ["<C-p>"] = cmp.mapping.select_prev_item(),
+            ["<C-n>"] = cmp.mapping.select_next_item(),
+            ["<C-d>"] = cmp.mapping.scroll_docs(-4),
+            ["<C-f>"] = cmp.mapping.scroll_docs(4),
+            ["<C-Space>"] = cmp.mapping.complete(),
+            ["<C-e>"] = cmp.mapping.close(),
+            ["<CR>"] = cmp.mapping.confirm {
+              behavior = cmp.ConfirmBehavior.Insert,
+              select = false,
+            },
+            ["<Tab>"] = function(fallback)
+              if cmp.visible() then
+                cmp.select_next_item()
+              else
+                fallback()
+              end
+            end,
+            ["<S-Tab>"] = function(fallback)
+              if cmp.visible() then
+                cmp.select_prev_item()
+              else
+                fallback()
+              end
+            end,
+          },
+
+          -- You should specify your *installed* sources.
+          sources = {
+            { name = "buffer" },
+            { name = "nvim_lsp" },
+            { name = "path" },
+            { name = "nvim_lua" },
+          },
+        }
+EOF
+endif
+
