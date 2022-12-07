@@ -70,7 +70,7 @@ if has('termguicolors')
 endif
 
 set background=dark
-"colorscheme gruvbox
+" colorscheme gruvbox
 
 " COC START ================================================
 inoremap <silent><expr> <TAB>
@@ -104,6 +104,8 @@ let g:sharpenup_statusline_opts.Highlight = 0
 
 " OmniSharp ================================================== 
 let g:OmniSharp_popup_position = 'peek'
+let g:OmniSharp_highlighting = 0
+
 if has('nvim')
   let g:OmniSharp_popup_options = {
   \ 'winblend': 30,
@@ -129,9 +131,13 @@ let g:OmniSharp_popup_mappings = {
 let g:OmniSharp_highlight_groups = {
 \ 'ExcludedCode': 'NonText',
 \ 'StructName' : 'StructName',
-\ 'ClassName' : 'ClassName',
+\ 'ClassName' : 'Type',
 \ 'EnumName' : 'EnumName',
-\ 'NamespaceName' : 'Punctuation',
+\ 'NamespaceName' : 'Identifier',
+\ 'PreprocessorText' : 'PreProc',
+\ 'PreprocessorKeyword' : 'PreProc',
+\ 'Keyword' : 'Keyword',
+\ 'NumericLiteral' : 'EnumName'
 \}
 
 " BAR BAR HOTKEYS ===========================================
